@@ -1,285 +1,259 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-function btoa(str: string) {
-  return typeof window !== "undefined" ? window.btoa(str) : Buffer.from(str).toString("base64");
-}
+const API = "";
 
-// ─── AUTH SCREENS ────────────────────────────────────────────────
-function LoginScreen({ onAuth }: { onAuth: (id: number, name: string) => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || "Login failed"); setLoading(false); return; }
-      onAuth(data.userId, data.name);
-    } catch { setError("Network error"); setLoading(false); }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name: email.split("@")[0] }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || "Registration failed"); setLoading(false); return; }
-      onAuth(data.userId, "Renaissance Man");
-    } catch { setError("Network error"); setLoading(false); }
-  };
-
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-white rounded-3xl mx-auto mb-5 flex items-center justify-center">
-            <span className="text-3xl">🧬</span>
-          </div>
-          <h1 className="text-4xl font-semibold text-white tracking-tight">Renaissance Man</h1>
-          <p className="text-[#86868b] mt-2 text-sm">Master every dimension of your life.</p>
-        </div>
-        <div className="bg-[#1c1c1e] rounded-3xl p-8">
-          <h2 className="text-2xl font-semibold text-white mb-6">Sign In</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full bg-[#2c2c2e] text-white rounded-2xl px-5 py-4 text-base placeholder-[#636366] outline-none focus:ring-2 focus:ring-[#0a84ff]" />
-            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full bg-[#2c2c2e] text-white rounded-2xl px-5 py-4 text-base placeholder-[#636366] outline-none focus:ring-2 focus:ring-[#0a84ff]" />
-            {error && <p className="text-[#ff453a] text-sm">{error}</p>}
-            <button type="submit" disabled={loading}
-              className="w-full bg-[#0a84ff] text-white font-semibold rounded-2xl py-4 text-base hover:bg-[#0a7aff] transition-colors">
-              {loading ? "Signing in..." : "Continue"}
-            </button>
-          </form>
-          <p className="text-[#636366] text-sm text-center mt-4">
-            No account? <button onClick={handleRegister} className="text-[#0a84ff]" disabled={loading}>Create one</button>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── HABIT ICONS ───────────────────────────────────────────────
-const ICONS: Record<string, string> = {
-  "sun": "☀️", "brain": "🧠", "book": "📖", "droplet": "💧", "moon": "🌙",
-  "phone_off": "📵", "dumbbell": "🏋️", "heart-pulse": "❤️", "book-open": "📚",
-  "layers": "🗂️", "code-2": "💻", "languages": "🗣️",
+const C = {
+  bg:       "#0a0a0b",
+  card:     "#111113",
+  border:   "#2a2a2e",
+  borderGlow: "#ff6b3520",
+  text:     "#f0ede8",
+  muted:    "#6b6b78",
+  faint:    "#3a3a42",
+  orange:   "#ff6b35",
+  green:    "#4ade80",
+  blue:     "#60a5fa",
+  purple:   "#a78bfa",
 };
 
-// ─── HABIT CARD ─────────────────────────────────────────────────
-function HabitCard({ habit, onToggle, loading }: { habit: any; onToggle: (id: number, done: boolean) => void; loading: boolean }) {
-  const icon = ICONS[habit.icon] || "✨";
-  const done = habit.completed === 1;
-  const label = habit.custom_label || habit.name;
-  const catColor = { mindset: "#a78bfa", health: "#34d399", fitness: "#f87171", knowledge: "#60a5fa" }[habit.category] || "#86868b";
-  const is100 = habit.streak >= 100;
-
-  return (
-    <div className={`relative rounded-3xl p-5 transition-all duration-300 ${done ? "bg-[#1c3a1c]" : "bg-[#1c1c1e]"} ${is100 ? "ring-1 ring-[#34d399]/50 shadow-[0_0_20px_rgba(52,211,153,0.15)]" : ""}`}>
-      {is100 && (
-        <div className="absolute top-3 right-3 text-[10px] font-medium text-[#34d399] bg-[#34d399]/20 px-2 py-0.5 rounded-full">
-          LEGENDARY 🔥
-        </div>
-      )}
-      <div className="flex items-center gap-4">
-        <div className="text-3xl flex-shrink-0">{icon}</div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-base font-medium truncate ${done ? "line-through text-[#86868b]" : "text-white"}`}>{label}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full capitalize" style={{ backgroundColor: catColor + "22", color: catColor }}>
-              {habit.category}
-            </span>
-            {habit.streak > 0 && (
-              <span className="text-[10px] text-[#86868b]">🔥 {habit.streak} day streak</span>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={() => !loading && onToggle(habit.habit_id, !done)}
-          disabled={loading}
-          className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center text-xl transition-all duration-200 flex-shrink-0 ${
-            done ? "bg-[#34d399] border-[#34d399] text-white" : "border-[#3a3a3c] text-[#636366] hover:border-[#34d399]/50"
-          }`}
-        >
-          {done ? "✓" : ""}
-        </button>
-      </div>
-    </div>
-  );
+function btoa(str: string) {
+  if (typeof globalThis.btoa === "function") return globalThis.btoa(str);
+  return Buffer.from(str, "utf-8").toString("base64");
 }
 
-// ─── STATS BAR ───────────────────────────────────────────────────
-function StatsBar({ stats }: { stats: { completed: number; possible: number; percentage: number } }) {
-  const pct = stats.percentage || 0;
-  return (
-    <div className="bg-[#1c1c1e] rounded-3xl p-5 mb-5">
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-sm text-[#86868b]">Monthly progress</span>
-        <span className="text-sm font-semibold text-white">{pct}%</span>
-      </div>
-      <div className="h-1.5 bg-[#2c2c2e] rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-[#0a84ff] to-[#34d399] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-      </div>
-      <p className="text-xs text-[#636366] mt-2">{stats.completed}/{stats.possible} completions this month</p>
-    </div>
-  );
-}
+const FONTS = ``;
 
-// ─── CALENDAR ────────────────────────────────────────────────────
-function CalendarHeatmap({ entries, month }: { entries: any[]; month: string }) {
-  const year = parseInt(month.split("-")[0]);
-  const mon = parseInt(month.split("-")[1]) - 1;
-  const daysInMonth = new Date(year, mon + 1, 0).getDate();
-  const firstDay = new Date(year, mon, 1).getDay();
-  const completedByDate: Record<string, number> = {};
-  entries.forEach((e: any) => { if (e.completed) completedByDate[e.date] = (completedByDate[e.date] || 0) + 1; });
+const TOTAL = 6;
 
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(mon + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    const done = completedByDate[dateStr] || 0;
-    const color = done === 0 ? "bg-[#2c2c2e]" : done === 1 ? "bg-[#0a84ff]/30" : done === 2 ? "bg-[#0a84ff]/60" : "bg-[#34d399]/60";
-    cells.push({ day: d, color, done });
+const CSS = `
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .p-card {
+    background: ${C.card};
+    border: 1px solid ${C.border};
+    border-radius: 12px;
+    padding: 16px;
+    animation: fadeUp 0.35s ease forwards;
+    opacity: 0;
+    transition: border-color 0.25s;
+  }
+  .p-card:hover { border-color: ${C.borderGlow}; }
+  .p-card.done  { border-color: ${C.orange}44; }
+
+  .h-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 4px; cursor: pointer;
+    border-radius: 6px; transition: background 0.15s;
+  }
+  .h-row:hover { background: #ffffff09; }
+
+  .cbox {
+    width: 20px; height: 20px; border-radius: 5px;
+    border: 1.5px solid ${C.faint};
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .cbox.on {
+    background: ${C.orange};
+    border-color: ${C.orange};
+    animation: checkPop 0.22s ease;
   }
 
-  return (
-    <div className="bg-[#1c1c1e] rounded-3xl p-5 mb-5">
-      <h3 className="text-sm font-medium text-[#86868b] mb-3">{new Date(year, mon).toLocaleString("default", { month: "long", year: "numeric" })}</h3>
-      <div className="grid grid-cols-7 gap-1">
-        {["S","M","T","W","T","F","S"].map(d => <div key={d} className="text-center text-[10px] text-[#636366]">{d}</div>)}
-        {cells.map((c, i) => c === null ? <div key={"e"+i} /> : (
-          <div key={c.day} className={`aspect-square rounded-lg flex items-center justify-center text-[10px] text-white ${c.color}`}>{c.day}</div>
-        ))}
-      </div>
-    </div>
-  );
+  .nav-tab {
+    background: none; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: ${C.muted}; padding: 10px 28px;
+    font-family: 'Barlow', 'Helvetica Neue', sans-serif;
+    font-size: 11px; letter-spacing: 0.5px;
+    text-transform: uppercase; transition: color 0.2s;
+  }
+  .nav-tab.on    { color: ${C.orange}; }
+  .nav-tab:hover:not(.on) { color: ${C.text}; }
+
+  .setting-input {
+    background: ${C.card}; border: 1px solid ${C.border};
+    color: ${C.text}; font-family: 'Barlow', sans-serif;
+    font-size: 14px; padding: 11px 14px; border-radius: 8px;
+    width: 100%; outline: none; transition: border-color 0.2s;
+  }
+  .setting-input:focus { border-color: ${C.orange}; }
+  .setting-input::placeholder { color: ${C.muted}; }
+
+  .pbar-track {
+    border-radius: 99px; overflow: hidden;
+    background: ${C.border};
+  }
+  .pbar-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes checkPop {
+    0%   { transform: scale(0.7); }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+`;
+
+function fmt(ts: string) {
+  const d = new Date(ts + (new Date().getTimezoneOffset() * 60 * 1000 < 0 ? "Z" : ""));
+  return d.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" });
 }
 
-// ─── SETTINGS MODAL ──────────────────────────────────────────────
-function SettingsModal({ userId, name, onClose }: { userId: number; name: string; onClose: () => void }) {
-  const [skill1, setSkill1] = useState("Skill 1");
-  const [skill2, setSkill2] = useState("Skill 2");
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, skill_one_label: skill1, skill_two_label: skill2 }) });
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#1c1c1e] rounded-3xl p-8 w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <h2 className="text-2xl font-semibold text-white mb-6">Settings</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm text-[#86868b] mb-1 block">Skill One Label</label>
-            <input value={skill1} onChange={e => setSkill1(e.target.value)} className="w-full bg-[#2c2c2e] text-white rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0a84ff]" />
-          </div>
-          <div>
-            <label className="text-sm text-[#86868b] mb-1 block">Skill Two Label</label>
-            <input value={skill2} onChange={e => setSkill2(e.target.value)} className="w-full bg-[#2c2c2e] text-white rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#0a84ff]" />
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-[#2c2c2e] text-[#86868b] text-sm">Cancel</button>
-          <button onClick={save} disabled={saving} className="flex-1 py-3 rounded-2xl bg-[#0a84ff] text-white text-sm font-medium">{saving ? "Saving..." : "Save"}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── MAIN APP ────────────────────────────────────────────────────
 export default function App() {
-  const [userId, setUserId] = useState<number | null>(null);
-  const [userName, setUserName] = useState("");
-  const [habits, setHabits] = useState<any[]>([]);
-  const [stats, setStats] = useState({ completed: 0, possible: 0, percentage: 0 });
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const [entries, setEntries] = useState<any[]>([]);
-  const [toggleLoading, setToggleLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const [page, setPage] = useState("dash");
+  const [done, setDone] = useState<Record<number, boolean>>({});
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!userId) return;
-    const date = month + "-15";
-    fetch(`/api/habits?userId=${userId}&date=${date}`).then(r => r.json()).then(d => setHabits(d.habits || []));
-    fetch(`/api/stats?userId=${userId}&month=${month}`).then(r => r.json()).then(d => setStats(d));
-    fetch(`/api/habits?userId=${userId}&date=${todayStr}`).then(r => r.json()).then(d => setEntries(d.habits || []));
-  }, [userId, month]);
+  const toggle = (id: number) =>
+    setDone(prev => ({ ...prev, [id]: !prev[id] }));
 
-  const handleToggle = async (habitId: number, done: boolean) => {
-    setToggleLoading(true);
-    await fetch("/api/habits/toggle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, habitId, date: todayStr, completed: done }) });
-    const d = await fetch(`/api/habits?userId=${userId}&date=${todayStr}`).then(r => r.json());
-    setHabits(d.habits || []);
-    const s = await fetch(`/api/stats?userId=${userId}&month=${month}`).then(r => r.json());
-    setStats(s);
-    setToggleLoading(false);
-  };
-
-  if (!userId) return <LoginScreen onAuth={(id, name) => { setUserId(id); setUserName(name); }} />;
-
-  const cats = ["mindset", "health", "fitness", "knowledge"];
-  const catLabels = { mindset: "🧠 Mindset", health: "❤️ Health", fitness: "💪 Fitness", knowledge: "📚 Knowledge" };
+  const doneCount = Object.values(done).filter(Boolean).length;
+  const pct = Math.round((doneCount / TOTAL) * 100);
+  const allDone = doneCount === TOTAL;
+  const accentColor = allDone ? C.green : C.orange;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-40 bg-black/80 backdrop-bl-xl border-b border-[#2c2c2e]">
-        <div className="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">Renaissance Man</h1>
-            <p className="text-xs text-[#86868b]">Welcome back, {userName}</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setMonth(prev => { const [y, m] = prev.split("-").map(Number); const d = new Date(y, m - 2, 1); return d.toISOString().slice(0, 7); })}
-              className="w-9 h-9 bg-[#1c1c1e] rounded-2xl flex items-center justify-center text-[#86868b]">‹</button>
-            <button onClick={() => setShowSettings(true)} className="w-9 h-9 bg-[#1c1c1e] rounded-2xl flex items-center justify-center text-[#86868b]">⚙️</button>
-            <button onClick={() => setMonth(prev => { const [y, m] = prev.split("-").map(Number); const d = new Date(y, m, 1); return d.toISOString().slice(0, 7); })}
-              className="w-9 h-9 bg-[#1c1c1e] rounded-2xl flex items-center justify-center text-[#86868b]">›</button>
-          </div>
-        </div>
-      </header>
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Barlow', 'Helvetica Neue', sans-serif", color: C.text }}>
+      <style>{FONTS + CSS}</style>
 
-      <main className="max-w-lg mx-auto px-5 py-5">
-        <StatsBar stats={stats} />
-        <CalendarHeatmap entries={entries} month={month} />
+      {/* DASHBOARD */}
+      {page === "dash" && (
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 100px" }}>
 
-        {cats.map(cat => {
-          const catHabits = habits.filter(h => h.category === cat);
-          if (!catHabits.length) return null;
-          return (
-            <div key={cat} className="mb-5">
-              <h2 className="text-sm font-semibold text-[#86868b] mb-3">{catLabels[cat as keyof typeof catLabels]}</h2>
-              <div className="space-y-2">
-                {catHabits.map(h => <HabitCard key={h.id} habit={h} onToggle={handleToggle} loading={toggleLoading} />)}
+          {/* Header */}
+          <div style={{ paddingTop: 28, paddingBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{
+                  fontFamily: "'Georgia', serif",
+                  fontSize: 10, letterSpacing: 5, color: C.orange,
+                  textTransform: "uppercase", marginBottom: 5,
+                }}>Renaissance Man</div>
+                <div style={{ fontSize: 13, color: C.muted }}>{fmt(new Date().toISOString().slice(0, 10))}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{
+                  fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                  fontSize: 44, fontWeight: 700, lineHeight: 1,
+                  color: allDone ? C.green : C.text,
+                }}>
+                  {doneCount}<span style={{ color: C.muted, fontSize: 22 }}>/{TOTAL}</span>
+                </div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{pct}% done today</div>
               </div>
             </div>
-          );
-        })}
-      </main>
+          </div>
 
-      {showSettings && <SettingsModal userId={userId!} name={userName} onClose={() => setShowSettings(false)} />}
+          {/* Progress Bar */}
+          <div className="pbar-track" style={{ height: 5, margin: "18px 0 24px" }}>
+            <div className="pbar-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${C.orange}, ${allDone ? C.green : C.orange})` }} />
+          </div>
+
+          {/* Today's Habits */}
+          <div className={`p-card${allDone ? " done" : ""}`} style={{ animationDelay: "0.05s" }}>
+            <div style={{ fontSize: 11, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }}>Today's Habits</div>
+            {[
+              { id: 1, label: "Meditate", icon: "◉", cat: "Mind" },
+              { id: 2, label: "Read 30 mins", icon: "◉", cat: "Mind" },
+              { id: 3, label: "Exercise", icon: "◉", cat: "Body" },
+              { id: 4, label: "Eat Clean", icon: "◉", cat: "Body" },
+              { id: 5, label: "Learn Skill", icon: "◉", cat: "Craft" },
+              { id: 6, label: "Reflect", icon: "◉", cat: "Spirit" },
+            ].map((h) => (
+              <div key={h.id} className="h-row" onClick={() => toggle(h.id)}>
+                <div className={`cbox${done[h.id] ? " on" : ""}`}>
+                  {done[h.id] && <span style={{ color: "#fff", fontSize: 11 }}>✓</span>}
+                </div>
+                <span style={{ fontSize: 15, color: done[h.id] ? C.muted : C.text, textDecoration: done[h.id] ? "line-through" : "none", flex: 1 }}>{h.label}</span>
+                <span style={{ fontSize: 10, color: C.muted, letterSpacing: 1 }}>{h.cat}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* All Done Banner */}
+          {allDone && (
+            <div style={{
+              marginTop: 16, padding: "16px 20px",
+              background: `${C.green}14`, border: `1px solid ${C.green}40`,
+              borderRadius: 12, color: C.green, fontSize: 14, fontWeight: 600,
+              textAlign: "center", animation: "fadeUp 0.4s ease",
+            }}>
+              All habits complete — well done, Renaissance Man.
+            </div>
+          )}
+
+          {/* Skills */}
+          <div className="p-card" style={{ marginTop: 16, animationDelay: "0.1s" }}>
+            <div style={{ fontSize: 11, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }}>Skills</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[{ label: "Coding", color: C.blue }, { label: "Photography", color: C.purple }].map((s, i) => (
+                <div key={i} style={{
+                  padding: "14px 16px", borderRadius: 8,
+                  background: `${s.color}10`, border: `1px solid ${s.color}30`,
+                  fontSize: 13, fontWeight: 600, color: s.color,
+                }}>
+                  {s.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SETTINGS */}
+      {page === "settings" && (
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "0 16px 100px" }}>
+          <div style={{ paddingTop: 28, marginBottom: 24 }}>
+            <div style={{ fontSize: 10, letterSpacing: 5, color: C.orange, textTransform: "uppercase" }}>Settings</div>
+          </div>
+          {[
+            { label: "Skill One", placeholder: "e.g. Coding" },
+            { label: "Skill Two", placeholder: "e.g. Photography" },
+          ].map((field, i) => (
+            <div key={i} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>{field.label}</div>
+              <input className="setting-input" placeholder={field.placeholder} />
+            </div>
+          ))}
+          <button style={{
+            width: "100%", padding: "13px", marginTop: 8,
+            background: C.orange, color: "#fff",
+            border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600,
+            cursor: "pointer", letterSpacing: 0.5,
+          }}>
+            Save Changes
+          </button>
+        </div>
+      )}
+
+      {/* Bottom Nav */}
+      <nav style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: `${C.card}ee`, backdropFilter: "blur(20px)",
+        borderTop: `1px solid ${C.border}`,
+        display: "flex", justifyContent: "center", gap: 0, padding: "6px 0 20px",
+        zIndex: 50,
+      }}>
+        {[
+          { id: "dash",     label: "Today" },
+          { id: "settings", label: "Settings" },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            className={`nav-tab${page === tab.id ? " on" : ""}`}
+            onClick={() => setPage(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
