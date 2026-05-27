@@ -1,0 +1,15 @@
+{
+  "name": "renaissance-man",
+  "local_port": 55919,
+  "entrypoint": "bun run dev",
+  "publish": {
+    "label": "renaissance-man",
+    "type": "http",
+    "entrypoint": "bun run prod",
+    "published_port": 58380,
+    "env": {
+      "NODE_ENV": "production",
+      "ZO_CLIENT_IDENTITY_TOKEN": "none"
+    }
+  }
+}
