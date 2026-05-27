@@ -1,0 +1,8 @@
+{
+  "name": "renaissance-man",
+  "runtime": "bun",
+  "entrypoint": "src/server.ts",
+  "site": "/renaissance-man",
+  "build": "bun run build",
+  "outdir": "dist"
+}
